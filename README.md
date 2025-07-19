@@ -10,6 +10,7 @@ A comprehensive web scraper that finds specific characters and patterns on websi
 - **Respectful Crawling**: Configurable delays and user agent strings
 - **Flexible Output**: Print to console or save to file
 - **File Type Filtering**: Exclude PDFs, images, and other binary files
+- **Web Interface**: Modern, responsive web UI with real-time progress
 - **Comprehensive Logging**: Verbose logging for debugging
 
 ## Installation
@@ -26,7 +27,27 @@ poetry shell
 
 ## Usage
 
-### Basic Usage
+### Web Interface (Recommended)
+
+Start the web interface for an easy-to-use GUI:
+
+```bash
+# Start the web server
+make web
+
+# Or directly with poetry
+poetry run python run_web_server.py
+```
+
+Then open your browser to `http://localhost:8080` and enjoy the modern web interface with:
+- Real-time progress updates
+- Live status monitoring
+- Export results to file
+- Responsive design for all devices
+
+### Command Line Usage
+
+#### Basic Usage
 
 Find trademark symbols (™) on a website:
 ```bash
@@ -81,6 +102,7 @@ python -m webchecker.main https://example.com --pattern "@" --exclude-extensions
 | `--extract-after` | Extract text after pattern | False |
 | `--exclude-extensions` | File extensions to exclude (e.g., .pdf .doc) | Common binary files |
 | `--max-pages` | Maximum pages to scrape | 50 |
+| `--web` | Start web interface | False |
 | `--max-depth` | Maximum link depth | 3 |
 | `--timeout` | Request timeout (seconds) | 10 |
 | `--user-agent` | User agent string | WebChecker/0.1.0 |
@@ -146,6 +168,34 @@ webchecker/
 ├── patterns.py         # Pattern matching
 └── utils.py            # Utility functions
 ```
+
+## Web Interface Features
+
+The web interface provides a modern, user-friendly way to use WebChecker:
+
+### 🎯 **Key Features**
+- **Real-time Progress**: Live progress bar and status updates
+- **Current Page Display**: See exactly which page is being scraped
+- **Results Export**: Download results as a text file
+- **Responsive Design**: Works on desktop, tablet, and mobile
+- **Error Handling**: Clear error messages and recovery options
+- **Session Management**: Stop, clear, and restart scraping sessions
+
+### 🚀 **Getting Started**
+1. Start the web server: `make web`
+2. Open your browser to `http://localhost:8080`
+3. Enter the website URL and pattern to search for
+4. Configure scraping options (max pages, depth, etc.)
+5. Click "Start Scraping" and watch the real-time progress
+6. Export results when complete
+
+### 📱 **Interface Elements**
+- **URL Input**: Enter the website to scrape
+- **Pattern Input**: Enter the character or regex pattern to find
+- **Progress Bar**: Real-time progress based on pages processed
+- **Status Indicator**: Current scraping status (Running, Completed, Error)
+- **Results List**: Live updates of found matches with URLs
+- **Export Button**: Download results as a text file
 
 ## Development
 

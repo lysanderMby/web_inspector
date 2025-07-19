@@ -42,6 +42,24 @@ run-example: ## Run the trademark finding example
 run-test: ## Run the installation test
 	poetry run python test_installation.py
 
+web: ## Start the web interface
+	poetry run python run_web_server.py
+
+web-dev: ## Start the web interface in development mode
+	poetry run python -m webchecker.web_app
+
+demo: ## Start web interface demo with browser auto-open
+	poetry run python demo_web_interface.py
+
+test-web: ## Test the web interface functionality
+	poetry run python test_web_interface.py
+
+test-extraction: ## Test the improved text extraction
+	poetry run python test_text_extraction.py
+
+test-url: ## Test URL normalization
+	poetry run python test_url_normalization.py
+
 check: ## Run all quality checks (lint, type-check, test)
 	$(MAKE) lint
 	$(MAKE) type-check

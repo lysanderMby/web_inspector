@@ -1,54 +1,66 @@
 """
-Utility functions for the WebChecker application.
+Utility functions for WebChecker.
 """
 
 import logging
 import re
+import socket
 from typing import Optional
 from urllib.parse import urlparse
 
 
 def setup_logging(verbose: bool = False) -> logging.Logger:
-    """
-    Setup logging configuration.
-    
-    Args:
-        verbose: Whether to enable verbose logging
-        
-    Returns:
-        Configured logger instance
-    """
+    """Setup logging configuration."""
     level = logging.DEBUG if verbose else logging.INFO
-    
-    # Configure logging
     logging.basicConfig(
         level=level,
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-        datefmt='%Y-%m-%d %H:%M:%S'
+        handlers=[
+            logging.StreamHandler(),
+            logging.FileHandler('webchecker.log')
+        ]
     )
-    
-    # Set specific logger levels
-    logging.getLogger('urllib3').setLevel(logging.WARNING)
-    logging.getLogger('requests').setLevel(logging.WARNING)
-    
     return logging.getLogger(__name__)
 
 
 def validate_url(url: str) -> bool:
-    """
-    Validate if a string is a proper URL.
-    
-    Args:
-        url: The URL string to validate
-        
-    Returns:
-        True if valid URL, False otherwise
-    """
+    """Validate if a string is a valid URL."""
     try:
         result = urlparse(url)
         return all([result.scheme, result.netloc])
-    except Exception:
+    except:
         return False
+
+
+def normalize_url(url: str) -> str:
+    """
+    Normalize URL by adding protocol if missing.
+    
+    Args:
+        url: The URL to normalize
+        
+    Returns:
+        Normalized URL with protocol
+    """
+    url = url.strip()
+    
+    # If no protocol specified, add https://
+    if not url.startswith(('http://', 'https://')):
+        url = 'https://' + url
+    
+    return url
+
+
+def find_available_port(start_port: int = 8080, max_attempts: int = 10) -> Optional[int]:
+    """Find an available port starting from start_port."""
+    for port in range(start_port, start_port + max_attempts):
+        try:
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                s.bind(('localhost', port))
+                return port
+        except OSError:
+            continue
+    return None
 
 
 def clean_text(text: str) -> str:
@@ -112,26 +124,15 @@ def is_same_domain(url1: str, url2: str) -> bool:
 
 
 def sanitize_filename(filename: str) -> str:
-    """
-    Sanitize a filename for safe file system usage.
-    
-    Args:
-        filename: Original filename
-        
-    Returns:
-        Sanitized filename
-    """
+    """Sanitize a filename for safe file system use."""
     # Remove or replace invalid characters
     filename = re.sub(r'[<>:"/\\|?*]', '_', filename)
-    
-    # Remove leading/trailing dots and spaces
-    filename = filename.strip('. ')
-    
+    # Remove leading/trailing spaces and dots
+    filename = filename.strip(' .')
     # Limit length
-    if len(filename) > 255:
-        filename = filename[:255]
-    
-    return filename
+    if len(filename) > 200:
+        filename = filename[:200]
+    return filename or 'webchecker_results'
 
 
 def format_file_size(size_bytes: int) -> str:

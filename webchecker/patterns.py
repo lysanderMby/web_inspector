@@ -55,7 +55,7 @@ class PatternMatcher:
     
     def _find_matches_with_context(self, text: str, extract_before: bool = True, extract_after: bool = False) -> List[str]:
         """
-        Find matches and extract text before/after them (up to the next/previous space).
+        Find matches and extract text before/after them with smart boundary detection.
         
         Args:
             text: The text to search in
@@ -73,17 +73,27 @@ class PatternMatcher:
             match_text = match.group()
             
             if extract_before:
-                # Find the start of the word (previous space or start of text)
+                # Find the start of the word (previous boundary or start of text)
                 word_start = match_start
-                while word_start > 0 and not text[word_start - 1].isspace():
+                while word_start > 0:
+                    char = text[word_start - 1]
+                    # Stop at whitespace, line breaks, or HTML-like characters
+                    if (char.isspace() or char in '\n\r\t' or 
+                        char in '()[]{}<>"' or ord(char) < 32):
+                        break
                     word_start -= 1
                 
                 # Extract the word (text from word_start to match_end)
                 word = text[word_start:match_end]
             elif extract_after:
-                # Find the end of the word (next space or end of text)
+                # Find the end of the word (next boundary or end of text)
                 word_end = match_end
-                while word_end < len(text) and not text[word_end].isspace():
+                while word_end < len(text):
+                    char = text[word_end]
+                    # Stop at whitespace, line breaks, or HTML-like characters
+                    if (char.isspace() or char in '\n\r\t' or 
+                        char in '()[]{}<>"' or ord(char) < 32):
+                        break
                     word_end += 1
                 
                 # Extract the word (text from match_start to word_end)
@@ -91,8 +101,10 @@ class PatternMatcher:
             else:
                 word = match_text
             
-            # Clean up the word (remove extra whitespace)
+            # Clean up the word (remove extra whitespace and trailing punctuation)
             word = word.strip()
+            # Remove trailing punctuation but preserve email structure
+            word = self._clean_trailing_punctuation(word)
             
             if word:
                 matches.append(word)
@@ -101,7 +113,7 @@ class PatternMatcher:
     
     def _find_matches_with_context_both(self, text: str) -> List[str]:
         """
-        Find matches and extract text both before and after them.
+        Find matches and extract text both before and after them with smart boundary detection.
         
         Args:
             text: The text to search in
@@ -116,21 +128,33 @@ class PatternMatcher:
             match_end = match.end()
             match_text = match.group()
             
-            # Find the start of the word (previous space or start of text)
+            # Find the start of the word (previous boundary or start of text)
             word_start = match_start
-            while word_start > 0 and not text[word_start - 1].isspace():
+            while word_start > 0:
+                char = text[word_start - 1]
+                # Stop at whitespace, line breaks, or HTML-like characters
+                if (char.isspace() or char in '\n\r\t' or 
+                    char in '()[]{}<>"' or ord(char) < 32):
+                    break
                 word_start -= 1
             
-            # Find the end of the word (next space or end of text)
+            # Find the end of the word (next boundary or end of text)
             word_end = match_end
-            while word_end < len(text) and not text[word_end].isspace():
+            while word_end < len(text):
+                char = text[word_end]
+                # Stop at whitespace, line breaks, or HTML-like characters
+                if (char.isspace() or char in '\n\r\t' or 
+                    char in '()[]{}<>"' or ord(char) < 32):
+                    break
                 word_end += 1
             
             # Extract the complete word (text from word_start to word_end)
             word = text[word_start:word_end]
             
-            # Clean up the word (remove extra whitespace)
+            # Clean up the word (remove extra whitespace and trailing punctuation)
             word = word.strip()
+            # Remove trailing punctuation but preserve email structure
+            word = self._clean_trailing_punctuation(word)
             
             if word:
                 matches.append(word)
@@ -192,4 +216,23 @@ class PatternMatcher:
             if matches:
                 results[symbol_type] = matches
         
-        return results 
+        return results
+    
+    def _clean_trailing_punctuation(self, word: str) -> str:
+        """
+        Clean trailing punctuation while preserving email structure.
+        
+        Args:
+            word: The word to clean
+            
+        Returns:
+            Cleaned word
+        """
+        # If it looks like an email address, be more careful with punctuation
+        if '@' in word and '.' in word.split('@')[1]:
+            # For emails, only remove punctuation at the very end
+            # but preserve dots in the domain
+            return word.rstrip(',;:!?')
+        else:
+            # For other patterns, remove trailing punctuation more aggressively
+            return word.rstrip('.,;:!?') 
