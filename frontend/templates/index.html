@@ -249,6 +249,23 @@
             font-size: 14px;
         }
 
+        .result-email {
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 16px;
+        }
+
+        .result-pages {
+            background: #e0f2fe;
+            color: #0c4a6e;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 14px;
+            word-break: break-all;
+        }
+
         .no-results {
             text-align: center;
             color: #6b7280;
@@ -335,8 +352,18 @@
                 </div>
 
                 <div class="form-group">
+                    <label for="emailMode" style="display: flex; align-items: center; gap: 8px;">
+                        <input type="checkbox" id="emailMode" style="width: auto; margin: 0;">
+                        <span>Email Detection Mode</span>
+                    </label>
+                    <small style="color: #6b7280; margin-top: 4px; display: block;">
+                        Automatically detect and validate email addresses. Results will be grouped by email with page locations.
+                    </small>
+                </div>
+
+                <div class="form-group" id="patternGroup">
                     <label for="pattern">Pattern to Search</label>
-                    <input type="text" id="pattern" placeholder="™, @, ©, or custom regex" required>
+                    <input type="text" id="pattern" placeholder="™, @, ©, or custom regex">
                     <small style="color: #6b7280; margin-top: 4px; display: block;">
                         Examples: ™ (trademark), @ (email), © (copyright), or custom regex patterns
                     </small>
@@ -425,6 +452,21 @@
         stopBtn.addEventListener('click', stopScraping);
         clearBtn.addEventListener('click', clearResults);
         exportBtn.addEventListener('click', exportResults);
+        
+        // Email mode toggle
+        const emailModeCheckbox = document.getElementById('emailMode');
+        const patternGroup = document.getElementById('patternGroup');
+        const patternInput = document.getElementById('pattern');
+        
+        emailModeCheckbox.addEventListener('change', function() {
+            if (this.checked) {
+                patternGroup.style.display = 'none';
+                patternInput.removeAttribute('required');
+            } else {
+                patternGroup.style.display = 'block';
+                patternInput.setAttribute('required', 'required');
+            }
+        });
 
         async function startScraping() {
             const urlInput = document.getElementById('url').value.trim();
@@ -432,9 +474,15 @@
             const maxPages = parseInt(document.getElementById('maxPages').value);
             const maxDepth = parseInt(document.getElementById('maxDepth').value);
             const followSitemap = document.getElementById('followSitemap').value === 'true';
+            const emailMode = document.getElementById('emailMode').checked;
 
-            if (!urlInput || !pattern) {
-                showError('Please enter both URL and pattern');
+            if (!urlInput) {
+                showError('Please enter a URL');
+                return;
+            }
+            
+            if (!emailMode && !pattern) {
+                showError('Please enter a pattern or enable email detection mode');
                 return;
             }
 
@@ -466,7 +514,8 @@
                         pattern,
                         max_pages: maxPages,
                         max_depth: maxDepth,
-                        follow_sitemap: followSitemap
+                        follow_sitemap: followSitemap,
+                        email_mode: emailMode
                     })
                 });
 
@@ -619,13 +668,25 @@
                 resultsCount.textContent = results.length;
                 exportBtn.disabled = false;
                 resultsList.innerHTML = results.map(result => {
-                    const [url, match] = result.split(': ', 2);
-                    return `
-                        <div class="result-item">
-                            <div class="result-url">${url}</div>
-                            <div class="result-match">${match}</div>
-                        </div>
-                    `;
+                    // Check if this is an email mode result (email: pages)
+                    if (result.includes('@') && result.includes(':') && !result.startsWith('http')) {
+                        const [email, pages] = result.split(': ', 2);
+                        return `
+                            <div class="result-item">
+                                <div class="result-email">📧 ${email}</div>
+                                <div class="result-pages">📄 Found on: ${pages}</div>
+                            </div>
+                        `;
+                    } else {
+                        // Regular result (url: match)
+                        const [url, match] = result.split(': ', 2);
+                        return `
+                            <div class="result-item">
+                                <div class="result-url">${url}</div>
+                                <div class="result-match">${match}</div>
+                            </div>
+                        `;
+                    }
                 }).join('');
             } else {
                 // Show "0 matches found" message

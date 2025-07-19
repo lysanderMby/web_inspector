@@ -19,7 +19,9 @@ class WebCheckerApp:
     """Main web application class for WebChecker."""
     
     def __init__(self):
-        self.app = Flask(__name__)
+        self.app = Flask(__name__, 
+                        template_folder='../../frontend/templates',
+                        static_folder='../../frontend/static')
         self.app.secret_key = os.urandom(24)
         self.app.config['SECRET_KEY'] = os.urandom(24)
         
@@ -50,10 +52,14 @@ class WebCheckerApp:
                 max_pages = int(data.get('max_pages', 50))
                 max_depth = int(data.get('max_depth', 3))
                 follow_sitemap = data.get('follow_sitemap', True)
+                email_mode = data.get('email_mode', False)
                 
                 # Validate inputs
-                if not url or not pattern:
-                    return jsonify({'error': 'URL and pattern are required'}), 400
+                if not url:
+                    return jsonify({'error': 'URL is required'}), 400
+                
+                if not email_mode and not pattern:
+                    return jsonify({'error': 'Pattern is required when not in email mode'}), 400
                 
                 # Normalize URL (add protocol if missing)
                 url = normalize_url(url)
@@ -75,7 +81,10 @@ class WebCheckerApp:
                 )
                 
                 # Initialize pattern matcher
-                pattern_matcher = PatternMatcher(pattern=pattern)
+                if email_mode:
+                    pattern_matcher = PatternMatcher(email_mode=True)
+                else:
+                    pattern_matcher = PatternMatcher(pattern=pattern)
                 
                 # Store session info
                 self.active_sessions[session_id] = {
@@ -96,7 +105,7 @@ class WebCheckerApp:
                 # Start scraping in background thread
                 thread = threading.Thread(
                     target=self._scrape_worker,
-                    args=(session_id, url, pattern_matcher, max_pages, max_depth, follow_sitemap)
+                    args=(session_id, url, pattern_matcher, max_pages, max_depth, follow_sitemap, email_mode)
                 )
                 thread.daemon = True
                 thread.start()
@@ -152,7 +161,7 @@ class WebCheckerApp:
             return jsonify({'status': 'cleared'})
     
     def _scrape_worker(self, session_id: str, url: str, pattern_matcher: PatternMatcher, 
-                      max_pages: int, max_depth: int, follow_sitemap: bool):
+                      max_pages: int, max_depth: int, follow_sitemap: bool, email_mode: bool):
         """Background worker for scraping."""
         session_data = self.active_sessions[session_id]
         scraper = session_data['scraper']
@@ -162,7 +171,7 @@ class WebCheckerApp:
             
             # Custom scraper that reports progress
             results = self._scrape_with_progress(
-                scraper, url, pattern_matcher, session_id, max_pages, max_depth, follow_sitemap
+                scraper, url, pattern_matcher, session_id, max_pages, max_depth, follow_sitemap, email_mode
             )
             
             session_data['results'] = results
@@ -179,7 +188,7 @@ class WebCheckerApp:
     
     def _scrape_with_progress(self, scraper: WebScraper, start_url: str, 
                             pattern_matcher: PatternMatcher, session_id: str,
-                            max_pages: int, max_depth: int, follow_sitemap: bool) -> List[str]:
+                            max_pages: int, max_depth: int, follow_sitemap: bool, email_mode: bool) -> List[str]:
         """Scrape with progress reporting."""
         results = []
         base_domain = urlparse(start_url).netloc
@@ -198,9 +207,9 @@ class WebCheckerApp:
                 if url not in visited_urls:
                     url_queue.append((url, 0))
         
-        # Update total pages
+        # Update total pages - use max_pages as the total
         session_data = self.active_sessions[session_id]
-        session_data['total_pages'] = min(len(url_queue), max_pages)
+        session_data['total_pages'] = max_pages
         
         processed_pages = 0
         
@@ -213,16 +222,24 @@ class WebCheckerApp:
             visited_urls.add(current_url)
             processed_pages += 1
             
-            # Update progress
+            # Update progress - calculate based on actual processed pages vs max_pages
             session_data['current_page'] = current_url
-            session_data['progress'] = int((processed_pages / max_pages) * 100)
+            progress_percentage = min(int((processed_pages / max_pages) * 100), 100)
+            session_data['progress'] = progress_percentage
             
             try:
-                # Scrape the page with both extract_before and extract_after
-                page_results = scraper._scrape_page(
-                    current_url, pattern_matcher, extract_before=True, extract_after=True
-                )
-                results.extend(page_results)
+                if email_mode:
+                    # Use email mode scraping
+                    page_results = scraper._scrape_page_email_mode(current_url, pattern_matcher)
+                    # Convert to the expected format for progress tracking
+                    for email, page_url in page_results:
+                        results.append(f"{page_url}: {email}")
+                else:
+                    # Scrape the page with both extract_before and extract_after
+                    page_results = scraper._scrape_page(
+                        current_url, pattern_matcher, extract_before=True, extract_after=True
+                    )
+                    results.extend(page_results)
                 
                 # Add delay
                 time.sleep(scraper.delay)

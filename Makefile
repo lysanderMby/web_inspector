@@ -1,101 +1,93 @@
-.PHONY: help install install-dev test test-cov lint type-check format clean run-example run-test
+# WebChecker Makefile
 
-help: ## Show this help message
-	@echo "WebChecker - Development Commands"
-	@echo "=================================="
-	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
+.PHONY: help install install-dev test test-extraction test-url web demo clean lint format
 
-install: ## Install production dependencies
-	poetry install --only main
+# Default target
+help:
+	@echo "WebChecker - Web Scraper for Patterns"
+	@echo "====================================="
+	@echo ""
+	@echo "Available commands:"
+	@echo "  install      - Install dependencies"
+	@echo "  install-dev  - Install development dependencies"
+	@echo "  test         - Run all tests"
+	@echo "  test-extraction - Run text extraction tests"
+	@echo "  test-url     - Run URL utility tests"
+	@echo "  test-email-fix - Run email extraction fix tests"
+	@echo "  test-email-mode - Run email mode tests"
+	@echo "  web          - Start web server"
+	@echo "  demo         - Run demo examples"
+	@echo "  demo-email   - Run email mode demo"
+	@echo "  clean        - Clean up generated files"
+	@echo "  lint         - Run linting"
+	@echo "  format       - Format code"
 
-install-dev: ## Install all dependencies including development tools
+# Install dependencies
+install:
+	poetry install
+
+# Install development dependencies
+install-dev:
 	poetry install --with test
 
-test: ## Run tests
-	poetry run pytest
+# Run all tests
+test:
+	poetry run python -m pytest backend/tests/ -v
 
-test-cov: ## Run tests with coverage
-	poetry run pytest --cov=webchecker --cov-report=html --cov-report=term
+# Run text extraction tests
+test-extraction:
+	poetry run python backend/tests/test_patterns.py
 
-lint: ## Run linting
-	poetry run flake8 webchecker/ tests/
+# Run URL utility tests
+test-url:
+	poetry run python backend/tests/test_utils.py
 
-type-check: ## Run type checking
-	poetry run mypy webchecker/
+# Run email extraction fix tests
+test-email-fix:
+	poetry run python backend/tests/test_email_extraction_fix.py
 
-format: ## Format code with black and isort
-	poetry run black webchecker/ tests/
-	poetry run isort webchecker/ tests/
+# Run email mode tests
+test-email-mode:
+	poetry run python backend/tests/test_email_mode.py
 
-clean: ## Clean up generated files
-	rm -rf .coverage
-	rm -rf htmlcov/
-	rm -rf .pytest_cache/
-	rm -rf __pycache__/
-	rm -rf webchecker/__pycache__/
-	rm -rf tests/__pycache__/
-	find . -name "*.pyc" -delete
-
-run-example: ## Run the trademark finding example
-	poetry run python examples/find_trademarks.py
-
-run-test: ## Run the installation test
-	poetry run python test_installation.py
-
-web: ## Start the web interface
+# Start web server
+web:
 	poetry run python run_web_server.py
 
-web-dev: ## Start the web interface in development mode
-	poetry run python -m webchecker.web_app
+# Run demo examples
+demo:
+	poetry run python backend/examples/basic_usage.py
 
-demo: ## Start web interface demo with browser auto-open
-	poetry run python demo_web_interface.py
+# Run email mode demo
+demo-email:
+	poetry run python backend/examples/email_mode_demo.py
 
-test-web: ## Test the web interface functionality
-	poetry run python test_web_interface.py
+# Clean up generated files
+clean:
+	find . -type f -name "*.pyc" -delete
+	find . -type d -name "__pycache__" -delete
+	find . -type d -name "*.egg-info" -exec rm -rf {} +
+	rm -f webchecker.log
+	rm -f *.txt
+	rm -f *.log
 
-test-extraction: ## Test the improved text extraction
-	poetry run python test_text_extraction.py
+# Run linting
+lint:
+	poetry run flake8 backend/ --max-line-length=100 --ignore=E501,W503
 
-test-url: ## Test URL normalization
-	poetry run python test_url_normalization.py
+# Format code
+format:
+	poetry run black backend/ --line-length=100
+	poetry run isort backend/
 
-check: ## Run all quality checks (lint, type-check, test)
-	$(MAKE) lint
-	$(MAKE) type-check
-	$(MAKE) test
+# Development server with auto-reload
+dev:
+	poetry run python run_web_server.py
 
-build: ## Build the package
-	poetry build
+# Quick test of CLI
+cli-test:
+	poetry run webchecker --help
 
-publish: ## Publish to PyPI (use with caution)
-	poetry publish
-
-shell: ## Activate poetry shell
-	poetry shell
-
-update: ## Update dependencies
-	poetry update
-
-lock: ## Lock dependencies
-	poetry lock
-
-# Development shortcuts
-dev: install-dev ## Setup development environment
-	@echo "Development environment ready!"
-	@echo "Run 'make shell' to activate the virtual environment"
-
-quick-test: ## Quick test run
-	poetry run pytest tests/ -v --tb=short
-
-# Documentation
-docs: ## Generate documentation (placeholder)
-	@echo "Documentation generation not yet implemented"
-	@echo "See README.md and DEVELOPMENT.md for documentation"
-
-# Docker (if needed in the future)
-docker-build: ## Build Docker image
-	docker build -t webchecker .
-
-docker-run: ## Run WebChecker in Docker
-	docker run -it webchecker python -m webchecker.main --help 
+# Quick test of web interface
+web-test:
+	poetry run webchecker-web --help 
