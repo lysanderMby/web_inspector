@@ -96,6 +96,7 @@ class WebCheckerApp:
                     'status': 'starting',
                     'progress': 0,
                     'current_page': '',
+                    'current_pages': 0,
                     'results': [],
                     'total_pages': 0,
                     'start_time': time.time(),
@@ -132,6 +133,7 @@ class WebCheckerApp:
                 'status': session_data['status'],
                 'progress': session_data['progress'],
                 'current_page': session_data['current_page'],
+                'current_pages': session_data.get('current_pages', 0),
                 'results': session_data['results'],
                 'total_pages': session_data['total_pages'],
                 'error': session_data['error'],
@@ -222,9 +224,20 @@ class WebCheckerApp:
             visited_urls.add(current_url)
             processed_pages += 1
             
-            # Update progress - calculate based on actual processed pages vs max_pages
+            # Update progress - calculate based on actual processed pages vs discovered pages
             session_data['current_page'] = current_url
-            progress_percentage = min(int((processed_pages / max_pages) * 100), 100)
+            session_data['current_pages'] = processed_pages
+            
+            # Calculate progress based on discovered pages vs processed, but cap at max_pages
+            total_discovered = len(url_queue) + processed_pages
+            session_data['total_pages'] = min(total_discovered, max_pages)
+            
+            # More accurate progress calculation
+            if session_data['total_pages'] > 0:
+                progress_percentage = min(int((processed_pages / session_data['total_pages']) * 100), 100)
+            else:
+                progress_percentage = 0
+            
             session_data['progress'] = progress_percentage
             
             try:

@@ -4,7 +4,6 @@ Command-line interface for WebChecker.
 
 import argparse
 import sys
-from typing import List, Optional
 
 from .scraper import WebScraper
 from .patterns import PatternMatcher

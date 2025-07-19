@@ -399,8 +399,13 @@
                         <div id="progressFill" class="progress-fill"></div>
                     </div>
                     <div class="progress-text">
-                        <span id="progressText">0%</span>
-                        <span id="currentPage">Ready to start...</span>
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span id="progressText">0%</span>
+                            <span id="progressDetail" style="font-size: 12px; color: #9ca3af;"></span>
+                        </div>
+                        <div style="margin-top: 4px;">
+                            <span id="currentPage">Ready to start...</span>
+                        </div>
                     </div>
                     <div style="margin-top: 10px;">
                         <span id="statusIndicator" class="status-indicator status-idle">Idle</span>
@@ -577,7 +582,7 @@
                     const data = await response.json();
 
                     if (response.ok) {
-                        updateProgress(data.progress);
+                        updateProgress(data.progress, data.current_pages, data.total_pages);
                         updateCurrentPage(data.current_page);
                         updateStatus(data.status);
                         updateElapsedTime(data.elapsed_time);
@@ -636,9 +641,23 @@
             errorSection.classList.add('hidden');
         }
 
-        function updateProgress(progress) {
-            progressFill.style.width = `${progress}%`;
-            progressText.textContent = `${progress}%`;
+        function updateProgress(progress, currentPages, totalPages) {
+            // Use more accurate progress calculation if available
+            let actualProgress = progress;
+            if (currentPages !== undefined && totalPages !== undefined && totalPages > 0) {
+                actualProgress = Math.min(Math.round((currentPages / totalPages) * 100), 100);
+            }
+            
+            progressFill.style.width = `${actualProgress}%`;
+            progressText.textContent = `${actualProgress}%`;
+            
+            // Update the progress text with more detailed info
+            if (currentPages !== undefined && totalPages !== undefined) {
+                const progressDetail = document.getElementById('progressDetail');
+                if (progressDetail) {
+                    progressDetail.textContent = `${currentPages} of ${totalPages} pages`;
+                }
+            }
         }
 
         function updateCurrentPage(page) {
@@ -705,7 +724,7 @@
         }
 
         function resetUI() {
-            updateProgress(0);
+            updateProgress(0, 0, 0);
             updateCurrentPage('Ready to start...');
             updateStatus('idle');
             updateElapsedTime(0);
@@ -714,6 +733,12 @@
             exportBtn.disabled = true;
             // Hide results section when resetting
             hideResults();
+            
+            // Clear progress detail
+            const progressDetail = document.getElementById('progressDetail');
+            if (progressDetail) {
+                progressDetail.textContent = '';
+            }
         }
 
         function exportResults() {
