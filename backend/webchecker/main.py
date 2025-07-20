@@ -4,7 +4,6 @@ Command-line interface for WebChecker.
 
 import argparse
 import sys
-
 from .scraper import WebScraper
 from .patterns import PatternMatcher
 from .utils import setup_logging, validate_url, normalize_url
