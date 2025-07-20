@@ -1,41 +1,49 @@
-# WebChecker - Web Scraper for Patterns
+# WebChecker - Regex-enabled Web Scraper
 
-A powerful web scraper that finds specific characters and patterns across websites, with both command-line and web interfaces.
+Web scraper that finds regex patterns across websites. CLI && front-end available. 
+Package management using poetry
 
-## 🏗️ Project Structure
+## Project Structure
 
 ```
 email_scraper/
-├── backend/                 # Backend Python code
-│   ├── webchecker/         # Core WebChecker package
+├── backend/                 # Backend Python
+│   ├── webchecker/         # Checks web content
 │   │   ├── __init__.py
 │   │   ├── scraper.py      # Web scraping engine
-│   │   ├── patterns.py     # Pattern matching logic
-│   │   ├── utils.py        # Utility functions
+│   │   ├── patterns.py     # Pattern matching logic with data retrieval
+│   │   ├── utils.py        # utils
 │   │   ├── main.py         # CLI interface
-│   │   └── web_app.py      # Flask web application
-│   ├── tests/              # Test files
+│   │   └── web_app.py      # Flask web app
+│   ├── tests/              # Tests
 │   │   ├── __init__.py
-│   │   ├── test_patterns.py
-│   │   └── test_utils.py
-│   └── examples/           # Example usage
+│   │   ├── test_patterns.py # Pattern matching unit test
+│   │   └── test_utils.py    # Test utils
+│   └── examples/           # example usages - start here if unsure
 │       ├── __init__.py
 │       └── basic_usage.py
 ├── frontend/               # Frontend assets
-│   ├── templates/          # HTML templates
-│   │   └── index.html      # Main web interface
-│   └── static/             # Static assets (CSS, JS, images)
-├── run_web_server.py       # Web server launcher
-├── pyproject.toml          # Project configuration
-├── Makefile               # Build and development commands
+│   ├── templates/          # HTML
+│   │   └── index.html      # index.html
+│   └── static/             # static assets
+├── run_web_server.py       # CLI launch of web server
+├── pyproject.toml          # config
+├── Makefile               # Makefile
 └── README.md              # This file
 ```
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Installation
 
 ```bash
+# Create venv
+python3 -m venv venv
+source ./venv/bin/activate
+
+# Install poetry (skip if poetry is already available)
+curl -sSL https://install.python-poetry.org | python3 -
+
 # Install dependencies
 make install
 
@@ -49,29 +57,24 @@ make install-dev
 # Start the web server
 make web
 
-# Or directly
+# Or directly from CLI
 poetry run python run_web_server.py
 ```
 
-The web interface will automatically open in your browser at `http://localhost:8080`.
+The web interface will automatically open in your browser at the firt available port from `http://localhost:8080` to `http://localhost:8090`
+Note - If all posts between 8080 and 8090 are in use, this 
 
 ### Command Line
 
 ```bash
-# Find trademark symbols
-poetry run webchecker https://example.com --pattern "™"
-
-# Find email addresses with context
-poetry run webchecker https://example.com --pattern "@" --extract-before --extract-after
-
-# Use email detection mode (recommended for emails)
-poetry run webchecker https://example.com --email-mode
+# Find trademark symbols with context
+poetry run webchecker https://example.com --pattern "™" --extract-before --extract-after
 
 # Use custom regex pattern
 poetry run webchecker https://example.com --custom-pattern r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
 ```
 
-## 🔧 Development
+## Dev Checks
 
 ### Running Tests
 
@@ -90,14 +93,17 @@ poetry run pytest backend/tests/ -v
 ### Code Quality
 
 ```bash
-# Lint code
+# Lint code using Flake8 (only backend)
 make lint
 
 # Format code
 make format
 
-# Clean up
+# Clean up (deleting dev files)
 make clean
+
+# See all relevant commands
+make help
 ```
 
 ### Examples
@@ -107,7 +113,7 @@ make clean
 make demo
 ```
 
-## 📖 Usage Examples
+## Examples
 
 ### Finding Trademarks
 
@@ -132,31 +138,6 @@ results = scraper.scrape_site(
 print(f"Found {len(results)} trademark matches")
 ```
 
-### Finding Email Addresses
-
-```python
-# Method 1: Use email detection mode (recommended)
-matcher = PatternMatcher(email_mode=True)
-
-# Scrape with email validation and grouping
-results = scraper.scrape_site(
-    "https://example.com",
-    matcher,
-    email_mode=True
-)
-
-# Method 2: Use @ pattern with context extraction
-matcher = PatternMatcher(pattern="@")
-
-# Scrape with context extraction
-results = scraper.scrape_site(
-    "https://example.com",
-    matcher,
-    extract_before=True,
-    extract_after=True
-)
-```
-
 ### Custom Regex Patterns
 
 ```python
@@ -165,34 +146,12 @@ matcher = PatternMatcher(custom_pattern=r'\b\d{3}[-.]?\d{3}[-.]?\d{4}\b')
 
 results = scraper.scrape_site("https://example.com", matcher)
 ```
-
-## 🌐 Web Interface Features
-
-- **Modern UI**: Clean, responsive design
-- **Email Detection Mode**: Checkbox to enable specialized email finding with validation
-- **Real-time Progress**: Live progress updates during scraping
-- **Auto-clear Results**: Previous results automatically clear on new scrape
-- **Smart URL Handling**: Automatically adds protocol if missing
-- **Export Results**: Download results as text file
-- **Error Handling**: Clear error messages and recovery
-- **No Results Feedback**: Shows helpful message when no matches found
-- **Grouped Results**: Email mode shows emails grouped with page locations
-
-## 🔍 Pattern Matching
-
-WebChecker supports various pattern matching options:
-
-- **Simple Characters**: `™`, `@`, `©`, `®`
-- **Email Detection Mode**: Specialized mode with validation and grouping
-- **Custom Regex**: Any valid Python regex pattern
-- **Context Extraction**: Extract text before/after matches
-- **Smart Boundaries**: Intelligent word boundary detection
-- **Email Validation**: Built-in email format validation
-- **HTML Artifact Cleaning**: Automatic removal of HTML tags and artifacts
-
-## ⚙️ Configuration Options
+## Configuration Options
 
 ### Scraping Settings
+
+Please ensure that when scraping you obey robots.txt and web rate limit requests.
+This repo **will not do this for you**.
 
 - `max_pages`: Maximum pages to scrape (default: 50)
 - `max_depth`: Maximum link depth (default: 3)
@@ -200,20 +159,18 @@ WebChecker supports various pattern matching options:
 - `delay`: Delay between requests (default: 1.0)
 - `follow_sitemap`: Follow sitemap URLs (default: False)
 
+follow_sitemap will lead to scraping all URLs in sitemap.xml.
+By default, this will search for links on the landing page and scrape all pages accessible from there (up to max_depth)
+
 ### Pattern Settings
 
 - `extract_before`: Extract text before match
 - `extract_after`: Extract text after match
 - `custom_pattern`: Use custom regex pattern
-- `email_mode`: Enable email detection mode with validation
 
-## 🧪 Testing
-
-The project includes comprehensive tests:
+## Testing
 
 - **Pattern Matching**: Tests for text extraction and boundary detection
-- **Email Mode**: Tests for email detection and validation
-- **Email Extraction Fix**: Tests for HTML artifact cleaning
 - **URL Utilities**: Tests for URL normalization and validation
 - **Integration**: End-to-end functionality tests
 
@@ -223,21 +180,11 @@ Run tests with:
 make test
 ```
 
-## 📝 License
+## License
 
-This project is licensed under the MIT License.
+Do what you want with this. 
 
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests for new functionality
-5. Run the test suite
-6. Submit a pull request
-
-## 📚 Documentation
+## Documentation
 
 - **CLI Usage**: Run `poetry run webchecker --help`
-- **Web Interface**: Access via browser at `http://localhost:8080`
-- **API Documentation**: See `backend/webchecker/` for module documentation 
+- **Web Interface**: Access via browser, using port 8080 by default
