@@ -61,8 +61,8 @@ make web
 poetry run python run_web_server.py
 ```
 
-The web interface will automatically open in your browser at the firt available port from `http://localhost:8080` to `http://localhost:8090`
-Note - If all posts between 8080 and 8090 are in use, this 
+The web interface will automatically open in your browser at the firt available port from `http://localhost:8080` to `http://localhost:8089`
+Note - If all posts between 8080 and 8089 are in use, the web launch will fail. This can be edited in web_app.py. 
 
 ### Command Line
 
